@@ -4,18 +4,11 @@ export default async function handler(req, res) {
   const { word } = req.query;
 
   if (!word) {
-    res.status(400).json({ error: "缺少参数 word" });
-    return;
+    return res.status(400).json({ error: "请输入单词" });
   }
 
-  const appid = process.env.APP_ID;
-  const key = process.env.KEY;
-
-  if (!appid || !key) {
-    res.status(500).json({ error: "环境变量 APP_ID 或 KEY 未配置" });
-    return;
-  }
-
+  const appid = process.env.APP_ID; // 在 Vercel 设置的环境变量
+  const key = process.env.KEY;      // 在 Vercel 设置的环境变量
   const salt = Date.now();
   const sign = crypto
     .createHash("md5")
@@ -29,8 +22,8 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url);
     const data = await response.json();
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ error: "调用百度翻译失败", detail: err.message });
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: "调用百度翻译失败", details: error });
   }
 }

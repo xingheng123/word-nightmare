@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>单词噩梦 - 闯关模式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center justify-center">
+
+  <div class="bg-white shadow-md rounded p-6 w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">5000 单词闯关</h1>
+
+    <p id="question" class="text-lg mb-4"></p>
+
+    <input id="answer" type="text" placeholder="请输入中文意思"
+      class="w-full border rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-green-400">
+
+    <button onclick="checkAnswer()"
+      class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded mb-2">
+      提交答案
+    </button>
+
+    <div id="feedback" class="mt-2 text-lg"></div>
+
+    <a href="index.html" class="block mt-6 text-blue-500">返回首页</a>
+  </div>
+
+  <script>
+    const words = [
+      { en: "apple", zh: "苹果" },
+      { en: "book", zh: "书" },
+      { en: "computer", zh: "电脑" },
+      { en: "school", zh: "学校" },
+      { en: "friend", zh: "朋友" }
+    ];
+
+    let currentIndex = 0;
+
+    function loadQuestion() {
+      if (currentIndex >= words.length) {
+        document.getElementById("question").innerText = "🎉 恭喜完成闯关！";
+        document.getElementById("answer").style.display = "none";
+        return;
+      }
+      document.getElementById("question").innerText = `请翻译：${words[currentIndex].en}`;
+    }
+
+    function checkAnswer() {
+      const input = document.getElementById("answer").value.trim();
+      const correct = words[currentIndex].zh;
+
+      if (input === correct) {
+        document.getElementById("feedback").innerHTML = "✅ 正确！";
+      } else {
+        document.getElementById("feedback").innerHTML = `❌ 错误，正确答案是：${correct}`;
+        saveWrongWord(words[currentIndex].en);
+      }
+
+      currentIndex++;
+      document.getElementById("answer").value = "";
+      setTimeout(() => {
+        document.getElementById("feedback").innerHTML = "";
+        loadQuestion();
+      }, 1000);
+    }
+
+    function saveWrongWord(word) {
+      let wrongs = JSON.parse(localStorage.getItem("wrongs") || "[]");
+      if (!wrongs.includes(word)) {
+        wrongs.push(word);
+        localStorage.setItem("wrongs", JSON.stringify(wrongs));
+      }
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
