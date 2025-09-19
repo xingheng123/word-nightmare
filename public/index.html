@@ -1,181 +1,81 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>单词闯关 - Word Nightmare</title>
+  <meta charset="UTF-8">
+  <title>单词噩梦 - 学习与翻译</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-  <header class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 flex items-center justify-between">
-    <div class="text-2xl font-bold">🐉 单词噩梦</div>
-    <nav class="space-x-3">
-      <a href="index.html" class="underline">首页</a>
-      <a href="wrong.html" class="underline">傻龙（错题库）</a>
-    </nav>
-  </header>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center justify-center">
 
-  <main class="max-w-3xl mx-auto p-6">
-    <section class="bg-white p-4 rounded shadow mb-6">
-      <div class="flex gap-2">
-        <input id="wordInput" class="flex-1 border rounded px-3 py-2" placeholder="输入英文单词（例如: abandon）"/>
-        <button id="btnSearch" class="bg-blue-600 text-white px-4 py-2 rounded">搜索</button>
-        <button id="btnStart" class="bg-green-600 text-white px-4 py-2 rounded">开始闯关</button>
-      </div>
-      <div id="searchMsg" class="mt-3 text-sm text-gray-600"></div>
-      <div id="searchResult" class="mt-3 hidden bg-gray-50 p-3 rounded text-sm">
-        <div><strong>单词：</strong><span id="resWord"></span></div>
-        <div><strong>百度翻译（中文）：</strong><span id="resZh"></span></div>
-      </div>
-    </section>
+  <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4 text-center">单词噩梦</h1>
+    <h2 class="text-lg text-center text-gray-600 mb-6">学习 · 翻译 · 错题库</h2>
 
-    <section id="quizSection" class="hidden bg-white p-4 rounded shadow mb-6">
-      <h2 class="text-lg font-semibold mb-2">闯关模式（手动输入答案）</h2>
-      <div class="mb-3">
-        <div id="quizWordDisplay" class="text-2xl font-bold">—</div>
-        <div class="text-sm text-gray-500">请输入该单词的中文意思，再点提交判分（无任何多选按钮）。</div>
-      </div>
+    <!-- 输入框 -->
+    <input 
+      type="text" 
+      id="wordInput" 
+      placeholder="请输入英文单词"
+      class="w-full border rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
+    >
 
-      <div class="flex gap-2">
-        <input id="quizAnswer" class="flex-1 border rounded px-3 py-2" placeholder="在此输入中文答案"/>
-        <button id="btnSubmit" class="bg-indigo-600 text-white px-4 py-2 rounded">提交</button>
-        <button id="btnReveal" class="bg-gray-200 px-4 py-2 rounded">显示答案</button>
-        <button id="btnNext" class="bg-gray-200 px-4 py-2 rounded">下一题</button>
-      </div>
+    <!-- 按钮 -->
+    <button 
+      onclick="searchWord()" 
+      class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-2">
+      翻译
+    </button>
 
-      <div id="quizFeedback" class="mt-3 text-sm font-medium"></div>
-    </section>
+    <!-- 结果显示 -->
+    <div id="result" class="mt-4 text-lg text-center text-gray-700"></div>
 
-    <section class="bg-white p-4 rounded shadow">
-      <h3 class="font-semibold mb-2">本地示例词库（点词可填入搜索框快速测试）</h3>
-      <div id="sampleWords" class="flex flex-wrap gap-2 text-sm"></div>
-    </section>
-  </main>
+    <!-- 错题库按钮 -->
+    <a href="wrong.html" class="block text-center mt-6 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded">
+      傻龙错题库
+    </a>
+  </div>
 
   <script>
-    // 示例词库（可替换）
-    const wordList = [
-      {word:'abandon'},{word:'benevolent'},{word:'candid'},
-      {word:'dormant'},{word:'elaborate'},{word:'gregarious'},
-      {word:'illicit'},{word:'jubilant'},{word:'harbor'},{word:'forthright'}
-    ];
+    async function searchWord() {
+      const word = document.getElementById("wordInput").value.trim();
+      if (!word) {
+        alert("请输入单词");
+        return;
+      }
 
-    // DOM
-    const btnSearch = document.getElementById('btnSearch');
-    const btnStart = document.getElementById('btnStart');
-    const searchResult = document.getElementById('searchResult');
-    const resWord = document.getElementById('resWord');
-    const resZh = document.getElementById('resZh');
-    const searchMsg = document.getElementById('searchMsg');
+      try {
+        const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
+        const data = await res.json();
 
-    const quizSection = document.getElementById('quizSection');
-    const quizWordDisplay = document.getElementById('quizWordDisplay');
-    const quizAnswer = document.getElementById('quizAnswer');
-    const btnSubmit = document.getElementById('btnSubmit');
-    const btnReveal = document.getElementById('btnReveal');
-    const btnNext = document.getElementById('btnNext');
-    const quizFeedback = document.getElementById('quizFeedback');
+        if (data && data.trans_result) {
+          const src = data.trans_result[0].src;
+          const dst = data.trans_result[0].dst;
 
-    // 加载 sample buttons
-    const sampleDiv = document.getElementById('sampleWords');
-    wordList.forEach(w=>{
-      const b = document.createElement('button');
-      b.className = 'px-3 py-1 bg-gray-100 rounded';
-      b.textContent = w.word;
-      b.onclick = ()=> document.getElementById('wordInput').value = w.word;
-      sampleDiv.appendChild(b);
-    });
+          document.getElementById("result").innerHTML =
+            `<p><b>${src}</b> → ${dst}</p>`;
 
-    // fetch Zh from backend (Baidu proxy)
-    async function fetchZh(word){
-      if(!word) throw new Error('empty');
-      const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
-      const data = await res.json();
-      if(data && data.error_code) throw new Error(`百度错误 ${data.error_code}: ${data.error_msg||''}`);
-      if(data && data.trans_result && data.trans_result[0] && data.trans_result[0].dst) return data.trans_result[0].dst;
-      throw new Error('未收到翻译结果');
+          // 模拟错题逻辑：如果输入 = 输出，算“错题”
+          if (src.toLowerCase() === dst.toLowerCase()) {
+            saveWrongWord(src);
+          }
+        } else {
+          document.getElementById("result").innerHTML =
+            `<p class="text-red-500">翻译失败</p>`;
+        }
+      } catch (err) {
+        console.error("请求错误：", err);
+        document.getElementById("result").innerHTML =
+          `<p class="text-red-500">请求失败，请检查后端配置</p>`;
+      }
     }
 
-    btnSearch.onclick = async ()=>{
-      const word = document.getElementById('wordInput').value.trim();
-      if(!word){ searchMsg.textContent='请输入单词'; return; }
-      searchMsg.textContent = '查询中...';
-      searchResult.classList.add('hidden');
-      try{
-        const zh = await fetchZh(word);
-        resWord.textContent = word;
-        resZh.textContent = zh;
-        searchResult.classList.remove('hidden');
-        searchMsg.textContent = '查询成功';
-        // set current quiz
-        currentQuiz.word = word;
-        currentQuiz.correctZh = zh;
-      }catch(err){
-        console.error(err);
-        searchMsg.textContent = '查询失败: ' + (err.message||'');
+    // 保存到本地存储
+    function saveWrongWord(word) {
+      let wrongs = JSON.parse(localStorage.getItem("wrongs") || "[]");
+      if (!wrongs.includes(word)) {
+        wrongs.push(word);
+        localStorage.setItem("wrongs", JSON.stringify(wrongs));
       }
-    };
-
-    // quiz
-    let currentQuiz = {word:null, correctZh:null};
-
-    btnStart.onclick = async ()=>{
-      let word = document.getElementById('wordInput').value.trim();
-      if(!word){
-        word = wordList[Math.floor(Math.random()*wordList.length)].word;
-      }
-      try{
-        const zh = await fetchZh(word);
-        currentQuiz.word = word;
-        currentQuiz.correctZh = zh;
-        quizSection.classList.remove('hidden');
-        quizWordDisplay.textContent = word;
-        quizAnswer.value = '';
-        quizFeedback.textContent = '';
-      }catch(err){
-        alert('无法开始闯关：' + (err.message||''));
-      }
-    };
-
-    btnSubmit.onclick = ()=>{
-      if(!currentQuiz.word || !currentQuiz.correctZh){ quizFeedback.textContent='请先开始闯关'; return; }
-      const user = quizAnswer.value.trim();
-      if(!user){ quizFeedback.textContent='请输入答案'; return; }
-      const correct = currentQuiz.correctZh.replace(/\s+/g,'').trim();
-      const a = user.replace(/\s+/g,'').trim();
-      if(correct.includes(a) || a.includes(correct) || similarity(a,correct) >= 0.6){
-        quizFeedback.textContent = '✅ 答对了';
-        quizFeedback.className = 'mt-3 text-sm text-green-600';
-      } else {
-        quizFeedback.textContent = `❌ 答错，正确答案：${currentQuiz.correctZh}`;
-        quizFeedback.className = 'mt-3 text-sm text-red-600';
-        saveWrong(currentQuiz.word, currentQuiz.correctZh);
-      }
-    };
-
-    btnReveal.onclick = ()=> {
-      if(currentQuiz.correctZh) quizFeedback.textContent = `答案：${currentQuiz.correctZh}`;
-    };
-
-    btnNext.onclick = ()=> {
-      const next = wordList[Math.floor(Math.random()*wordList.length)].word;
-      document.getElementById('wordInput').value = next;
-      btnStart.click();
-    };
-
-    // similarity simple
-    function similarity(a,b){
-      if(!a||!b) return 0;
-      let common=0;
-      for(const ch of a){ if(b.includes(ch)) common++; }
-      return common / Math.max(b.length,1);
-    }
-
-    // save wrong
-    function saveWrong(word, correct){
-      const key = 'wn_wrong_list_v1';
-      const arr = JSON.parse(localStorage.getItem(key)||'[]');
-      if(!arr.find(x=>x.word===word)){ arr.push({word,correct,when:Date.now()}); localStorage.setItem(key, JSON.stringify(arr)); }
     }
   </script>
 </body>

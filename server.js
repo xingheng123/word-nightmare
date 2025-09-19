@@ -12,8 +12,9 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, maxAge: 0 }));
 
 // TODO: 填你的百度 APPID / KEY
-const appid = '20250919002458888';
-const key = '6cm5vP19ztevmtMabljW';
+const appid = process.env.APP_ID;
+const key = process.env.KEY;
+
 
 app.get('/api/baiduTranslate', async (req, res) => {
   try {
