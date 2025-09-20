@@ -1,61 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8" />
-  <title>傻龙错题库</title>
+  <meta charset="UTF-8">
+  <title>单词噩梦 - 错题本</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-white rounded shadow p-6">
-    <h1 class="text-2xl font-bold mb-4">傻龙错题库</h1>
-    <div id="list"></div>
-    <div class="mt-4 flex gap-2">
-      <button id="btnClear" class="flex-1 bg-red-500 text-white py-2 rounded">清空</button>
-      <a href="index.html" class="flex-1 text-center bg-gray-200 py-2 rounded">返回首页</a>
-    </div>
-  </div>
+<body class="bg-gray-50 text-gray-900 font-sans">
+  <header class="bg-red-500 text-white p-4 text-center text-2xl font-bold">
+    傻龙错题本
+  </header>
 
-<script>
-  const key = 'wrongs';
-  const listDiv = document.getElementById('list');
-  function render(){
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!arr.length) { listDiv.innerHTML = '<div class="text-gray-500">暂无错题</div>'; return; }
-    listDiv.innerHTML = arr.map((it, idx)=>`
-      <div class="p-2 border rounded mb-2 flex justify-between items-center">
-        <div>
-          <div class="font-semibold">${idx+1}. ${it.en || ''}</div>
-          <div class="text-sm text-gray-600">中文：${it.zh || '—'}</div>
-          <div class="text-xs text-gray-400">${it.when ? new Date(it.when).toLocaleString() : ''}</div>
-        </div>
-        <div class="flex flex-col gap-1">
-          <button class="practiceBtn px-2 py-1 bg-blue-600 text-white rounded" data-en="${it.en}">练习</button>
-          <button class="deleteBtn px-2 py-1 bg-gray-200 rounded" data-en="${it.en}">删除</button>
-        </div>
-      </div>
-    `).join('');
-    // attach events
-    document.querySelectorAll('.deleteBtn').forEach(b=>{
-      b.onclick = ()=> {
-        const en = b.dataset.en;
-        const arr = JSON.parse(localStorage.getItem(key) || '[]').filter(x=>x.en !== en);
-        localStorage.setItem(key, JSON.stringify(arr)); render();
-      };
-    });
-    document.querySelectorAll('.practiceBtn').forEach(b=>{
-      b.onclick = ()=> {
-        const en = b.dataset.en;
-        // go to challenge and practice this word via query param
-        window.location.href = `challenge.html?practice=${encodeURIComponent(en)}`;
-      };
-    });
-  }
+  <main class="p-6 max-w-2xl mx-auto space-y-6">
+    <h1 class="text-2xl font-bold text-center">我的错题</h1>
+    <ul id="wrongList" class="space-y-2"></ul>
+  </main>
 
-  document.getElementById('btnClear').onclick = ()=> {
-    if (confirm('确定清空全部错题？')) { localStorage.removeItem(key); render(); }
-  };
-
-  render();
-</script>
+  <script>
+    const wrong = JSON.parse(localStorage.getItem("wrongWords") || "[]");
+    const list = document.getElementById("wrongList");
+    if (wrong.length === 0) {
+      list.innerHTML = "<p class='text-center text-gray-500'>暂无错题</p>";
+    } else {
+      wrong.forEach((w, i) => {
+        const li = document.createElement("li");
+        li.className = "bg-white shadow p-3 rounded";
+        li.innerText = `${i+1}. 英文: ${w.en}, 中文: ${w.zh}, 你的答案: ${w.userAns}`;
+        list.appendChild(li);
+      });
+    }
+  </script>
 </body>
 </html>
