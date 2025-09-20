@@ -1,57 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>单词噩梦 - 翻译 & 学习</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>单词噩梦 - 首页</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-white rounded shadow p-6">
-    <h1 class="text-2xl font-bold text-center mb-4">单词噩梦</h1>
+<body class="bg-gray-50 text-gray-900">
+  <header class="p-6 bg-blue-600 text-white text-center">
+    <h1 class="text-3xl font-bold">单词噩梦</h1>
+    <p class="mt-2">专升本高频词记忆助手</p>
+  </header>
 
-    <input id="wordInput" placeholder="输入英文或中文单词" class="w-full border rounded px-3 py-2 mb-3" />
-
-    <button id="btnTranslate" class="w-full bg-blue-600 text-white py-2 rounded">翻译</button>
-
-    <div id="result" class="mt-4 min-h-[48px] text-center"></div>
-
-    <div class="mt-6 flex gap-2">
-      <a href="challenge.html" class="flex-1 text-center bg-green-500 text-white py-2 rounded">闯关模式</a>
-      <a href="wrong.html" class="flex-1 text-center bg-red-500 text-white py-2 rounded">傻龙错题库</a>
+  <main class="p-6 text-center">
+    <h2 class="text-xl font-semibold mb-4">选择学习模式</h2>
+    <div class="space-x-4">
+      <a href="/challenge.html" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+        🚀 闯关模式
+      </a>
     </div>
-  </div>
-
-<script>
-  document.getElementById('btnTranslate').addEventListener('click', async () => {
-    const word = document.getElementById('wordInput').value.trim();
-    if (!word) { alert('请输入单词或中文'); return; }
-    const resultDiv = document.getElementById('result');
-    resultDiv.textContent = '查询中...';
-
-    try {
-      const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
-      const data = await res.json();
-      console.log('API:', data);
-
-      if (data.error) {
-        resultDiv.innerHTML = `<span class="text-red-500">翻译错误：${data.error} ${data.error_code||''} ${data.error_msg||''}</span>`;
-        return;
-      }
-
-      if (data.trans_result && data.trans_result[0]) {
-        const src = data.trans_result[0].src;
-        const dst = data.trans_result[0].dst;
-        resultDiv.innerHTML = `<div><strong>${src}</strong> → ${dst}</div>`;
-        // 若用户的输入和翻译结果一致就不保存；否则如果是用户输入英文而翻译得到中文，且用户希望保存错题的逻辑按需求来
-      } else {
-        resultDiv.innerHTML = `<span class="text-red-500">未收到翻译结果</span>`;
-      }
-    } catch (err) {
-      console.error(err);
-      resultDiv.innerHTML = `<span class="text-red-500">请求失败，请检查后端与环境变量</span>`;
-    }
-  });
-</script>
+  </main>
 </body>
 </html>
