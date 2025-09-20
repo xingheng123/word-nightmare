@@ -1,29 +1,52 @@
-{
-  "level1": [
-    "abandon","ability","able","about","above","accept","according","account","across","act",
-    "action","activity","actually","add","address","administration","admit","adult","affect","after",
-    "again","against","age","agency","agent","ago","agree","agreement","ahead","air",
-    "all","allow","almost","alone","along","already","also","although","always","among",
-    "amount","analysis","ancient","and","animal","another","answer","any","anyone","anything",
-    "appear","application","apply","approach","area","argue","argument","arm","around","arrive",
-    "art","article","artist","as","ask","assume","at","attack","attention","attitude",
-    "attorney","audience","author","authority","available","avoid","away","baby","back","bad",
-    "bag","ball","bank","bar","base","be","beat","beautiful","because","become",
-    "bed","before","begin","behavior","behind","believe","benefit","best","better","between",
-    "beyond","big","bill","billion","bit","black","blood","blow","blue","board",
-    "body","book","born","both","box","boy","break","bring","brother","budget",
-    "build","building","business","but","buy","by","call","camera","campaign","can"
-  ],
-  "level2": [
-    "cancer","candidate","capital","car","card","care","career","carry","case","catch",
-    "cause","cell","center","central","century","certain","certainly","chair","challenge","chance",
-    "change","character","charge","check","child","choice","choose","church","citizen","city",
-    "civil","claim","class","clean","clear","clearly","client","close","coach","cold",
-    "collection","college","color","come","commercial","common","community","company","compare","competition",
-    "complain","complete","completely","complex","computer","concern","condition","conference","Congress","consider",
-    "consumer","contain","continue","control","cost","could","country","couple","course","court",
-    "cover","create","crime","cultural","culture","cup","current","customer","cut","daily",
-    "damage","dance","danger","data","dark","darkness","date","daughter","day","dead",
-    "deal","dealer","dear","death","debate","decade","decide","decision","deep","defense"
-  ]
-}
+[
+  {
+    "id": 1,
+    "word": "abandon",
+    "translation": "放弃"
+  },
+  {
+    "id": 2,
+    "word": "ability",
+    "translation": "能力"
+  },
+  {
+    "id": 3,
+    "word": "abolish",
+    "translation": "废除"
+  },
+  {
+    "id": 4,
+    "word": "absorb",
+    "translation": "吸收"
+  },
+  {
+    "id": 5,
+    "word": "abstract",
+    "translation": "抽象的"
+  },
+  {
+    "id": 6,
+    "word": "academic",
+    "translation": "学术的"
+  },
+  {
+    "id": 7,
+    "word": "accelerate",
+    "translation": "加速"
+  },
+  {
+    "id": 8,
+    "word": "accept",
+    "translation": "接受"
+  },
+  {
+    "id": 9,
+    "word": "access",
+    "translation": "进入；使用权"
+  },
+  {
+    "id": 10,
+    "word": "accident",
+    "translation": "事故"
+  }
+]
