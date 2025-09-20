@@ -1,85 +1,292 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>单词噩梦 ‐ 闯关模式</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>闯关模式 - 单词噩梦</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-lg bg-white rounded shadow p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">5000 单词闯关（每关 100 题）</h1>
 
-  <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6">🚀 闯关模式（每关 100 个单词）</h1>
-    <div id="question" class="text-xl font-semibold mb-4">加载中...</div>
-    <input id="answer" type="text" placeholder="请输入英文单词的中文意思" 
-           class="w-full border rounded px-3 py-2 mb-4" />
-    <button onclick="checkAnswer()" class="w-full bg-green-500 text-white px-4 py-2 rounded mb-4">
-      提交
-    </button>
-    <div id="feedback" class="text-lg mb-4"></div>
-    <a href="index.html" class="underline text-blue-600">返回首页</a>
+    <div class="flex gap-2 mb-3">
+      <select id="mode" class="flex-1 border px-2 py-1 rounded">
+        <option value="en-zh">英 → 中</option>
+        <option value="zh-en">中 → 英</option>
+        <option value="random">随机</option>
+      </select>
+
+      <select id="selectLevel" class="w-40 border px-2 py-1 rounded"></select>
+
+      <button id="btnStart" class="bg-blue-600 text-white px-3 rounded">开始</button>
+    </div>
+
+    <div id="meta" class="text-sm text-gray-500 mb-3">请选择关卡并点击开始（支持从错题库传参练习）</div>
+
+    <div id="questionArea" class="mb-3">
+      <div id="question" class="text-xl font-semibold mb-2">请点击开始</div>
+      <input id="answer" class="w-full border px-3 py-2 rounded" placeholder="在此输入答案" autocomplete="off" />
+    </div>
+
+    <button id="btnSubmit" class="w-full bg-green-500 text-white py-2 rounded mb-2">提交答案</button>
+    <div id="feedback" class="mb-2 min-h-[28px]"></div>
+
+    <div class="flex gap-2">
+      <button id="btnNext" class="flex-1 bg-gray-200 py-2 rounded">跳过 / 下一题</button>
+      <a href="index.html" class="flex-1 text-center bg-gray-300 py-2 rounded">返回首页</a>
+    </div>
   </div>
 
-  <script>
-    let wordsByLevel = {};
-    let currentLevel = 1;
-    let currentList = [];
-    let currentIndex = 0;
+<script>
+  // ---------- 辅助函数 ----------
+  function isChinese(text){ return /[\u4e00-\u9fff]/.test(text); }
+  function normalizeEn(s){ return (s||'').replace(/[^a-z0-9]/gi,'').toLowerCase(); }
+  function normalizeZh(s){ return (s||'').replace(/\s+/g,'').trim(); }
 
-    async function loadWords() {
-      try {
-        const resp = await fetch('words.json');
-        wordsByLevel = await resp.json();
-        currentList = wordsByLevel["level1"];
-        currentIndex = 0;
-        loadQuestion();
-      } catch(e) {
-        document.getElementById('question').innerText = '载入词库失败';
-      }
+  function commonCharRatio(a,b){
+    if(!a||!b) return 0;
+    let common = 0;
+    for(const ch of a){
+      if(b.includes(ch)) common++;
     }
+    return common / Math.max(b.length,1);
+  }
 
-    function loadQuestion() {
-      if (currentIndex >= currentList.length) {
-        currentLevel++;
-        const nextKey = "level" + currentLevel;
-        if (wordsByLevel[nextKey]) {
-          currentList = wordsByLevel[nextKey];
-          currentIndex = 0;
-          alert(`第 ${currentLevel-1} 关完成！进入第 ${currentLevel} 关`);
-        } else {
-          document.getElementById('question').innerText = "🎉 全部关卡完成！";
-          document.getElementById('answer').style.display = "none";
-          return;
-        }
-      }
-      document.getElementById('question').innerText = `第 ${currentLevel} 关 ‐ 请翻译：${currentList[currentIndex]}`;
-      document.getElementById('answer').value = '';
-      document.getElementById('feedback').innerText = '';
+  // 模糊匹配：区分中/英
+  function fuzzyMatch(user, expected){
+    if(!user || !expected) return false;
+    if (isChinese(expected)){
+      const a = normalizeZh(user);
+      const b = normalizeZh(expected);
+      if(!a || !b) return false;
+      if (b.includes(a) || a.includes(b)) return true;
+      return commonCharRatio(a,b) >= 0.6;
+    } else {
+      const a = normalizeEn(user);
+      const b = normalizeEn(expected);
+      if(!a || !b) return false;
+      if (a === b) return true;
+      if (b.includes(a) || a.includes(b)) return true;
+      return commonCharRatio(a,b) >= 0.6;
     }
+  }
 
-    function checkAnswer() {
-      const user = document.getElementById('answer').value.trim();
-      const correct = currentList[currentIndex];
-      if (user.toLowerCase() === correct.toLowerCase()) {
-        document.getElementById('feedback').innerText = "✅ 正确！";
-      } else {
-        document.getElementById('feedback').innerText = `❌ 错误，答案是：${correct}`;
-        saveWrong(correct);
-      }
-      currentIndex++;
-      setTimeout(loadQuestion, 800);
-    }
-
-    function saveWrong(word) {
+  // 保存错题，存对象 { en, zh, when }
+  function saveWrongItem(item){
+    try{
       const key = 'wrongs';
-      let arr = JSON.parse(localStorage.getItem(key) || '[]');
-      if (!arr.includes(word)) {
-        arr.push(word);
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      // 避免重复：以 en + zh 作为唯一判定（若缺 zh 则用 en）
+      const exists = arr.some(x => x.en === item.en && x.zh === item.zh);
+      if(!exists){
+        arr.push({ ...item, when: Date.now() });
         localStorage.setItem(key, JSON.stringify(arr));
       }
+    }catch(e){
+      console.error('保存错题失败', e);
+    }
+  }
+
+  // ---------- DOM & 状态 ----------
+  const modeEl = document.getElementById('mode');
+  const selectLevelEl = document.getElementById('selectLevel');
+  const btnStart = document.getElementById('btnStart');
+  const questionEl = document.getElementById('question');
+  const answerEl = document.getElementById('answer');
+  const feedbackEl = document.getElementById('feedback');
+  const btnSubmit = document.getElementById('btnSubmit');
+  const btnNext = document.getElementById('btnNext');
+  const metaEl = document.getElementById('meta');
+
+  let wordsByLevel = {};
+  let currentLevel = 1;
+  let currentList = [];
+  let currentIndex = 0;
+  let currentMode = 'en-zh';
+
+  // 当前题目状态
+  let currentEnWord = '';     // 英文原词（words.json 的值）
+  let currentPrompt = '';     // 显示给用户的提示（可能是英文或中文）
+  let expectedAnswer = '';    // 我们用来判分的标准答案（中文或英文）
+  let fetching = false;
+
+  // ---------- 加载词库 & 支撑函数 ----------
+  async function loadWordsJson(){
+    try {
+      const r = await fetch('words.json');
+      wordsByLevel = await r.json();
+      // 填充关卡选择
+      const keys = Object.keys(wordsByLevel).sort((a,b)=>{
+        const na = Number(a.replace('level',''));
+        const nb = Number(b.replace('level',''));
+        return na - nb;
+      });
+      selectLevelEl.innerHTML = keys.map(k => {
+        const n = k.replace('level','');
+        return `<option value="${n}">第 ${n} 关</option>`;
+      }).join('');
+      // 如果有 practice 参数（从错题库跳转），处理
+      const params = new URLSearchParams(window.location.search);
+      const practice = params.get('practice');
+      if(practice){
+        // 把单词放到 currentList 单题练习
+        currentList = [practice];
+        currentLevel = 0; // 标识为练习单词，不算关卡
+        questionEl.textContent = '练习指定单词（来自错题库）';
+        // 直接开始准备题目
+        currentMode = 'en-zh';
+        await prepareQuestion();
+      }
+    } catch(err){
+      console.error('载入词库失败', err);
+      questionEl.textContent = '载入词库失败，请检查 public/words.json';
+    }
+  }
+
+  function setLevel(n){
+    currentLevel = Number(n);
+    currentList = wordsByLevel['level' + currentLevel] || [];
+    currentIndex = 0;
+  }
+
+  // ---------- 请求翻译并准备题目 ----------
+  async function prepareQuestion(){
+    if(fetching) return;
+    feedbackEl.textContent = '';
+    // 如果 currentList 未设置（未选择关卡），从 selectLevel 初始化
+    if(!currentList || currentList.length === 0){
+      setLevel(selectLevelEl.value || 1);
+    }
+    if(currentIndex >= currentList.length){
+      // 本关完成
+      const nextKey = 'level' + (currentLevel + 1);
+      if(wordsByLevel[nextKey]){
+        alert(`第 ${currentLevel} 关完成！进入第 ${currentLevel+1} 关`);
+        setLevel(currentLevel + 1);
+      } else {
+        questionEl.textContent = '🎉 已完成所有关卡（或无下一关）';
+        answerEl.style.display = 'none';
+        return;
+      }
     }
 
-    window.addEventListener('load', loadWords);
-  </script>
+    const enWord = currentList[currentIndex];
+    currentEnWord = enWord;
+    // 计算当前实际模式（若为 random，则随机选一个方向）
+    let mode = currentMode;
+    if(mode === 'random') mode = Math.random() < 0.5 ? 'en-zh' : 'zh-en';
 
+    // 请求后端获得必要的翻译结果（如果网络或 API 出问题会提示）
+    try {
+      fetching = true;
+      btnSubmit.disabled = true;
+      btnNext.disabled = true;
+      metaEl.textContent = `加载题目：第 ${currentLevel>0?currentLevel:'?'} 关 第 ${currentIndex+1} 题（方向：${mode}）`;
+
+      if(mode === 'en-zh'){
+        // prompt: 英文； expectedAnswer: 中文（由后端获取）
+        currentPrompt = enWord;
+        // 调用后端：转换 en->zh
+        const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(enWord)}`);
+        const data = await res.json();
+        if(data && data.trans_result && data.trans_result[0] && data.trans_result[0].dst){
+          expectedAnswer = data.trans_result[0].dst;
+        } else {
+          expectedAnswer = '';
+          console.warn('翻译未返回中文', data);
+        }
+        questionEl.textContent = `第 ${currentLevel} 关 第 ${currentIndex+1} 题：英 → 中  请翻译： ${currentPrompt}`;
+      } else {
+        // zh-en: we need chinese prompt (from enWord's translation), expectedAnswer = enWord
+        const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(enWord)}`);
+        const data = await res.json();
+        const zh = (data && data.trans_result && data.trans_result[0]) ? data.trans_result[0].dst : '';
+        currentPrompt = zh || enWord; // 若翻译失败则回退显示英文（并告知）
+        expectedAnswer = enWord;
+        questionEl.textContent = `第 ${currentLevel} 关 第 ${currentIndex+1} 题：中 → 英  请翻译： ${currentPrompt}`;
+      }
+    } catch(err){
+      console.error('prepareQuestion error', err);
+      questionEl.textContent = '加载题目失败：请检查 /api/baiduTranslate 是否可用';
+      expectedAnswer = '';
+    } finally {
+      fetching = false;
+      btnSubmit.disabled = false;
+      btnNext.disabled = false;
+      answerEl.value = '';
+      feedbackEl.textContent = '';
+    }
+  }
+
+  // ---------- 提交判分 ----------
+  btnSubmit.addEventListener('click', ()=>{
+    if(fetching) { feedbackEl.textContent = '正在加载题目，请稍候...'; return; }
+    const user = answerEl.value.trim();
+    if(!user){ feedbackEl.textContent = '请输入答案后再提交'; return; }
+
+    // 判断当前实际模式（若随机则按上次 prepareQuestion 确定）
+    let mode = currentMode;
+    if(mode === 'random'){
+      // decide by seeing question text: if question contains "英 → 中" then mode=en-zh else zh-en
+      mode = questionEl.textContent.includes('英 → 中') ? 'en-zh' : 'zh-en';
+    }
+
+    const ok = fuzzyMatch(user, expectedAnswer);
+    if(ok){
+      feedbackEl.innerHTML = '<span class="text-green-600">✅ 答对</span>';
+    } else {
+      feedbackEl.innerHTML = `<span class="text-red-600">❌ 错误，标准答案：${expectedAnswer || '(未获取)'}</span>`;
+      // 保存错题：记录 en + zh
+      if(mode === 'en-zh'){
+        // expectedAnswer 是中文（可能为空）， currentEnWord 是英文
+        saveWrongItem({ en: currentEnWord, zh: expectedAnswer || '' });
+      } else {
+        // zh-en： expectedAnswer 是英文原词， currentPrompt 为中文提示（或英文回退）
+        saveWrongItem({ en: expectedAnswer || currentEnWord, zh: currentPrompt || '' });
+      }
+    }
+
+    // 下一题
+    currentIndex++;
+    setTimeout(()=> {
+      prepareQuestion();
+    }, 900);
+  });
+
+  // 跳过/下一题
+  btnNext.addEventListener('click', ()=>{
+    if(fetching) return;
+    currentIndex++;
+    prepareQuestion();
+  });
+
+  // 开始按钮：加载 level，并 prepare first question
+  btnStart.addEventListener('click', async ()=>{
+    currentMode = modeEl.value;
+    const lvl = Number(selectLevelEl.value || 1);
+    setLevel(lvl);
+    await prepareQuestion();
+  });
+
+  // ---------- 页面加载 ----------
+  (async function init(){
+    await loadWordsJson();
+
+    // 支持 url 参数 practice=xxx（来自错题库）
+    const params = new URLSearchParams(window.location.search);
+    const practice = params.get('practice');
+    if(practice){
+      // practice 已在 loadWordsJson 中处理，若 words.json 未加载完会在 loadWordsJson 后调用 prepareQuestion
+      // 这里确保切换 mode 为 en-zh（练习错题时优先英→中）
+      modeEl.value = 'en-zh';
+      currentMode = 'en-zh';
+    } else {
+      // 若非 practice，则默认选择第1关
+      selectLevelEl.value = selectLevelEl.value || '1';
+      setLevel(Number(selectLevelEl.value || 1));
+    }
+  })();
+</script>
 </body>
 </html>
