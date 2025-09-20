@@ -3,78 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>单词噩梦 - 闯关模式</title>
+  <title>单词噩梦 闯关模式</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 text-gray-900">
-  <header class="p-4 bg-blue-600 text-white text-center">
-    <h1 class="text-2xl font-bold">5000 单词闯关</h1>
+  <header class="p-4 bg-green-500 text-white text-center text-2xl font-bold">
+    闯关模式 (每关 100 个单词)
   </header>
 
-  <main class="max-w-xl mx-auto p-6">
-    <div class="mb-4">
-      <label class="mr-4"><input type="radio" name="mode" value="en-zh" checked /> 英译中</label>
+  <main class="max-w-lg mx-auto p-6 space-y-4">
+    <div class="flex space-x-2">
+      <label><input type="radio" name="mode" value="en-zh" checked /> 英译中</label>
       <label><input type="radio" name="mode" value="zh-en" /> 中译英</label>
+      <label><input type="radio" name="mode" value="random" /> 随机</label>
     </div>
 
-    <div id="questionBox" class="bg-white p-6 rounded-lg shadow text-center">
-      <p id="question" class="text-2xl font-semibold mb-4">加载中...</p>
+    <div id="questionArea" class="bg-white p-6 rounded shadow text-center">
+      <p id="question" class="text-xl font-semibold mb-4">加载题目...</p>
       <input id="answer" type="text" placeholder="请输入答案"
-        class="w-full p-3 border rounded-lg mb-4" />
-      <button onclick="checkAnswer()" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
-        提交
-      </button>
+             class="w-full border rounded p-2 mb-4" />
+      <button onclick="checkAnswer()" class="bg-blue-500 text-white px-4 py-2 rounded">提交</button>
+      <button onclick="nextQuestion()" class="ml-2 bg-gray-400 text-white px-4 py-2 rounded">跳过</button>
+      <p id="feedback" class="mt-4 text-lg"></p>
+      <p id="progress" class="mt-2 text-sm text-gray-600"></p>
     </div>
-
-    <p id="feedback" class="mt-4 text-lg font-medium"></p>
   </main>
 
   <script>
-    const words = ["apple","banana","computer","university","knowledge","success","dream","challenge"]; 
+    let wordsByLevel = {};
+    let currentLevel = 1;
+    let currentList = [];
     let currentIndex = 0;
+    let mode = 'en-zh';
+    let expectedAnswer = '';
 
-    async function prepareQuestion() {
-      const word = words[currentIndex];
-      const mode = document.querySelector("input[name='mode']:checked").value;
-      let questionText, correctAnswer;
+    document.querySelectorAll("input[name='mode']").forEach(r => {
+      r.addEventListener('change', () => {
+        mode = document.querySelector("input[name='mode']:checked").value;
+      });
+    });
 
+    async function loadWords() {
       try {
-        const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
-        const data = await res.json();
-
-        if (mode === "en-zh") {
-          questionText = word;
-          correctAnswer = data.trans_result?.[0]?.dst || "";
-        } else {
-          questionText = data.trans_result?.[0]?.dst || "";
-          correctAnswer = word;
-        }
-
-        document.getElementById("question").innerText = questionText;
-        document.getElementById("answer").dataset.correct = correctAnswer;
+        const resp = await fetch('words.json');
+        wordsByLevel = await resp.json();
+        currentList = wordsByLevel["level" + currentLevel] || [];
+        showQuestion();
       } catch (err) {
-        console.error("prepareQuestion error:", err);
-        document.getElementById("question").innerText = "❌ 加载题目失败";
+        console.error("载入词库失败:", err);
+        document.getElementById('question').innerText = '加载词库失败';
       }
+    }
+
+    async function showQuestion() {
+      if (currentIndex >= currentList.length) {
+        document.getElementById('question').innerText = `第 ${currentLevel} 关 完成！`;
+        return;
+      }
+      const word = currentList[currentIndex];
+      try {
+        if (mode === 'en-zh') {
+          document.getElementById('question').innerText = `翻译成中文： ${word}`;
+          const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
+          const data = await res.json();
+          expectedAnswer = data.trans_result?.[0]?.dst || '';
+        } else if (mode === 'zh-en') {
+          const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
+          const data = await res.json();
+          const zh = data.trans_result?.[0]?.dst || '';
+          document.getElementById('question').innerText = `翻译成英文： ${zh}`;
+          expectedAnswer = word;
+        } else {  // random
+          if (Math.random() < 0.5) {
+            document.getElementById('question').innerText = `翻译成中文： ${word}`;
+            const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
+            const data = await res.json();
+            expectedAnswer = data.trans_result?.[0]?.dst || '';
+          } else {
+            const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
+            const data = await res.json();
+            const zh = data.trans_result?.[0]?.dst || '';
+            document.getElementById('question').innerText = `翻译成英文： ${zh}`;
+            expectedAnswer = word;
+          }
+        }
+      } catch (err) {
+        console.error("题目加载失败:", err);
+        document.getElementById('question').innerText = '加载失败，请稍后重试';
+        expectedAnswer = '';
+      }
+      document.getElementById('answer').value = '';
+      document.getElementById('feedback').innerText = '';
+      document.getElementById('progress').innerText = `第 ${currentIndex+1} / ${currentList.length} 题`;
     }
 
     function checkAnswer() {
-      const input = document.getElementById("answer");
-      const correct = input.dataset.correct;
-      const userAnswer = input.value.trim();
-
-      if (userAnswer === correct) {
-        document.getElementById("feedback").innerText = "✅ 正确!";
-      } else {
-        document.getElementById("feedback").innerText = `❌ 错误，正确答案是：${correct}`;
+      const user = document.getElementById('answer').value.trim();
+      if (!user) {
+        document.getElementById('feedback').innerText = '请输入答案';
+        return;
       }
-
-      currentIndex = (currentIndex + 1) % words.length;
-      input.value = "";
-      setTimeout(prepareQuestion, 1500);
+      if (user.toLowerCase() === (expectedAnswer || '').toLowerCase()) {
+        document.getElementById('feedback').innerText = '✅ 正确';
+      } else {
+        document.getElementById('feedback').innerText = `❌ 错误，正确答案：${expectedAnswer}`;
+        // 保错题
+        const wrong = JSON.parse(localStorage.getItem('wrongWords') || '[]');
+        wrong.push({ en: mode==='en-zh'? currentList[currentIndex] : expectedAnswer, zh: mode==='en-zh'? expectedAnswer : currentList[currentIndex] });
+        localStorage.setItem('wrongWords', JSON.stringify(wrong));
+      }
+      currentIndex++;
+      setTimeout(showQuestion, 1000);
     }
 
-    prepareQuestion();
+    function nextQuestion() {
+      currentIndex++;
+      showQuestion();
+    }
+
+    window.addEventListener('load', loadWords);
   </script>
 </body>
 </html>
