@@ -1,24 +1,56 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>单词噩梦 - 首页</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
-  <header class="p-6 bg-blue-600 text-white text-center">
-    <h1 class="text-3xl font-bold">单词噩梦</h1>
-    <p class="mt-2">专升本高频词记忆助手</p>
+<body class="bg-gray-50 text-gray-900 font-sans">
+  <header class="bg-blue-500 text-white p-4 text-center text-2xl font-bold">
+    单词噩梦 Word Nightmare
   </header>
 
-  <main class="p-6 text-center">
-    <h2 class="text-xl font-semibold mb-4">选择学习模式</h2>
-    <div class="space-x-4">
-      <a href="/challenge.html" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
-        🚀 闯关模式
-      </a>
-    </div>
+  <main class="p-6 max-w-2xl mx-auto space-y-6">
+    <h1 class="text-3xl font-bold text-center">欢迎来到单词噩梦</h1>
+    <p class="text-center text-gray-600">选择学习模式，或者直接查单词。</p>
+
+    <!-- 🔍 搜索框 -->
+    <section class="bg-white shadow rounded p-4">
+      <h2 class="text-xl font-semibold mb-2">随手查单词</h2>
+      <div class="flex space-x-2">
+        <input id="searchInput" type="text" placeholder="输入英文或中文"
+          class="flex-1 border rounded p-2">
+        <button onclick="searchWord()"
+          class="bg-blue-500 text-white px-4 py-2 rounded">搜索</button>
+      </div>
+      <p id="searchResult" class="mt-3 text-gray-700"></p>
+    </section>
+
+    <!-- 🎮 模式选择 -->
+    <section class="bg-white shadow rounded p-4">
+      <h2 class="text-xl font-semibold mb-2">模式选择</h2>
+      <div class="flex flex-col space-y-3">
+        <a href="challenge.html"
+           class="bg-green-500 text-white p-3 rounded text-center hover:bg-green-600">闯关模式</a>
+        <a href="wrong.html"
+           class="bg-red-500 text-white p-3 rounded text-center hover:bg-red-600">傻龙错题本</a>
+      </div>
+    </section>
   </main>
+
+  <script>
+    async function searchWord() {
+      const q = document.getElementById("searchInput").value.trim();
+      if (!q) return alert("请输入要查询的单词或词语！");
+      try {
+        const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        document.getElementById("searchResult").innerText = 
+          data?.trans_result?.[0]?.dst || "未找到结果";
+      } catch (e) {
+        document.getElementById("searchResult").innerText = "查询失败，请稍后再试。";
+      }
+    }
+  </script>
 </body>
 </html>
