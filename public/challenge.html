@@ -1,139 +1,79 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>单词闯关</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f7f7f7; }
-    #game { background: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; }
-    #question { font-size: 24px; margin-bottom: 20px; }
-    #answer { width: 100%; padding: 10px; font-size: 18px; }
-    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
-    #result { margin-top: 20px; font-size: 18px; }
-    #progress { margin-top: 10px; font-size: 14px; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>单词噩梦 - 闯关模式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div id="game">
-    <h2>单词闯关模式</h2>
+<body class="bg-gray-50 text-gray-900">
+  <header class="p-4 bg-blue-600 text-white text-center">
+    <h1 class="text-2xl font-bold">5000 单词闯关</h1>
+  </header>
 
-    <!-- 模式选择 -->
-    <div>
-      <label><input type="radio" name="mode" value="en-zh" checked> 英译中</label>
-      <label><input type="radio" name="mode" value="zh-en"> 中译英</label>
+  <main class="max-w-xl mx-auto p-6">
+    <div class="mb-4">
+      <label class="mr-4"><input type="radio" name="mode" value="en-zh" checked /> 英译中</label>
+      <label><input type="radio" name="mode" value="zh-en" /> 中译英</label>
     </div>
 
-    <div id="question">点击开始生成题目</div>
-    <input type="text" id="answer" placeholder="请输入答案">
-    <button onclick="checkAnswer()">提交答案</button>
-    <button onclick="nextQuestion()">下一题</button>
+    <div id="questionBox" class="bg-white p-6 rounded-lg shadow text-center">
+      <p id="question" class="text-2xl font-semibold mb-4">加载中...</p>
+      <input id="answer" type="text" placeholder="请输入答案"
+        class="w-full p-3 border rounded-lg mb-4" />
+      <button onclick="checkAnswer()" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+        提交
+      </button>
+    </div>
 
-    <div id="result"></div>
-    <div id="progress"></div>
-  </div>
+    <p id="feedback" class="mt-4 text-lg font-medium"></p>
+  </main>
 
   <script>
-    // ======= 示例单词（这里替换成 5000 高频词表）=======
-    const words = [
-      "abandon", "ability", "able", "about", "above", "accept", "according", "account", "across", "act",
-      "action", "activity", "actually", "add", "address", "administration", "admit", "adult", "affect", "after",
-      "again", "against", "age", "agency", "agent", "ago", "agree", "agreement", "ahead", "air"
-      // TODO: 在这里插入完整的5000词表
-    ];
-
+    const words = ["apple","banana","computer","university","knowledge","success","dream","challenge"]; 
     let currentIndex = 0;
-    const wordsPerLevel = 100; // 每关100词
 
     async function prepareQuestion() {
       const word = words[currentIndex];
       const mode = document.querySelector("input[name='mode']:checked").value;
-
       let questionText, correctAnswer;
 
       try {
+        const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
+        const data = await res.json();
+
         if (mode === "en-zh") {
-          // 英译中
           questionText = word;
-          const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
-          if (!res.ok) throw new Error(`HTTP 错误：${res.status}`);
-
-          let data;
-          try {
-            data = await res.json();
-          } catch (e) {
-            const text = await res.text();
-            console.error("⚠️ API 返回的不是 JSON，实际内容：", text);
-            throw e;
-          }
-
-          if (!data.trans_result || data.trans_result.length === 0) {
-            throw new Error("百度翻译返回结果为空");
-          }
-
-          correctAnswer = data.trans_result[0].dst;
-
+          correctAnswer = data.trans_result?.[0]?.dst || "";
         } else {
-          // 中译英
-          const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
-          if (!res.ok) throw new Error(`HTTP 错误：${res.status}`);
-
-          let data;
-          try {
-            data = await res.json();
-          } catch (e) {
-            const text = await res.text();
-            console.error("⚠️ API 返回的不是 JSON，实际内容：", text);
-            throw e;
-          }
-
-          if (!data.trans_result || data.trans_result.length === 0) {
-            throw new Error("百度翻译返回结果为空");
-          }
-
-          questionText = data.trans_result[0].dst;
+          questionText = data.trans_result?.[0]?.dst || "";
           correctAnswer = word;
         }
 
-        // 更新页面
         document.getElementById("question").innerText = questionText;
-        document.getElementById("answer").value = "";
         document.getElementById("answer").dataset.correct = correctAnswer;
-        document.getElementById("progress").innerText =
-          `第 ${currentIndex + 1} / ${words.length} 词 | 当前第 ${Math.floor(currentIndex / wordsPerLevel) + 1} 关`;
-
       } catch (err) {
-        console.error("❌ prepareQuestion 出错：", err);
-        document.getElementById("question").innerText = "加载题目失败，请检查控制台日志";
+        console.error("prepareQuestion error:", err);
+        document.getElementById("question").innerText = "❌ 加载题目失败";
       }
     }
 
     function checkAnswer() {
-      const userAnswer = document.getElementById("answer").value.trim();
-      const correctAnswer = document.getElementById("answer").dataset.correct;
+      const input = document.getElementById("answer");
+      const correct = input.dataset.correct;
+      const userAnswer = input.value.trim();
 
-      if (userAnswer === "") {
-        document.getElementById("result").innerText = "⚠️ 请输入答案";
-        return;
-      }
-
-      if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
-        document.getElementById("result").innerText = "✅ 正确！";
+      if (userAnswer === correct) {
+        document.getElementById("feedback").innerText = "✅ 正确!";
       } else {
-        document.getElementById("result").innerText = `❌ 错误，正确答案是：${correctAnswer}`;
+        document.getElementById("feedback").innerText = `❌ 错误，正确答案是：${correct}`;
       }
+
+      currentIndex = (currentIndex + 1) % words.length;
+      input.value = "";
+      setTimeout(prepareQuestion, 1500);
     }
 
-    function nextQuestion() {
-      currentIndex++;
-      if (currentIndex >= words.length) {
-        document.getElementById("question").innerText = "🎉 恭喜完成所有单词！";
-        document.getElementById("progress").innerText = "";
-        return;
-      }
-      prepareQuestion();
-    }
-
-    // 初始加载第一题
     prepareQuestion();
   </script>
 </body>
