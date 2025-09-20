@@ -1,82 +1,47 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>单词噩梦 - 学习与翻译</title>
+  <meta charset="UTF-8" />
+  <title>单词噩梦 ‐ 翻译练习</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center justify-center">
+<body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
 
   <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-4 text-center">单词噩梦</h1>
-    <h2 class="text-lg text-center text-gray-600 mb-6">学习 · 翻译 · 错题库</h2>
+    <h1 class="text-3xl font-bold mb-6">📘 单词噩梦</h1>
 
-    <!-- 输入框 -->
-    <input 
-      type="text" 
-      id="wordInput" 
-      placeholder="请输入英文单词"
-      class="w-full border rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-    >
-
-    <!-- 按钮 -->
-    <button 
-      onclick="searchWord()" 
-      class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-2">
+    <input id="inputWord" type="text" placeholder="输入英文单词" 
+           class="w-full border rounded px-3 py-2 mb-4" />
+    <button onclick="translateWord()" class="w-full bg-blue-500 text-white px-4 py-2 rounded mb-4">
       翻译
     </button>
 
-    <!-- 结果显示 -->
-    <div id="result" class="mt-4 text-lg text-center text-gray-700"></div>
+    <div id="output" class="text-lg text-center text-green-700 mb-4"></div>
 
-    <!-- 错题库按钮 -->
-    <a href="wrong.html" class="block text-center mt-6 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded">
-      傻龙错题库
-    </a>
+    <a href="challenge.html" class="underline text-blue-600">进入闯关模式 🚀</a><br/>
+    <a href="wrong.html" class="underline text-red-600 mt-2">错题库</a>
   </div>
 
   <script>
-    async function searchWord() {
-      const word = document.getElementById("wordInput").value.trim();
+    async function translateWord() {
+      const word = document.getElementById('inputWord').value.trim();
       if (!word) {
         alert("请输入单词");
         return;
       }
-
       try {
         const res = await fetch(`/api/baiduTranslate?word=${encodeURIComponent(word)}`);
         const data = await res.json();
-
-        if (data && data.trans_result) {
-          const src = data.trans_result[0].src;
-          const dst = data.trans_result[0].dst;
-
-          document.getElementById("result").innerHTML =
-            `<p><b>${src}</b> → ${dst}</p>`;
-
-          // 模拟错题逻辑：如果输入 = 输出，算“错题”
-          if (src.toLowerCase() === dst.toLowerCase()) {
-            saveWrongWord(src);
-          }
+        if (data.trans_result && data.trans_result[0]) {
+          document.getElementById('output').innerText = data.trans_result[0].dst;
         } else {
-          document.getElementById("result").innerHTML =
-            `<p class="text-red-500">翻译失败</p>`;
+          document.getElementById('output').innerText = "翻译失败：" + (data.error || "未知错误");
         }
       } catch (err) {
-        console.error("请求错误：", err);
-        document.getElementById("result").innerHTML =
-          `<p class="text-red-500">请求失败，请检查后端配置</p>`;
-      }
-    }
-
-    // 保存到本地存储
-    function saveWrongWord(word) {
-      let wrongs = JSON.parse(localStorage.getItem("wrongs") || "[]");
-      if (!wrongs.includes(word)) {
-        wrongs.push(word);
-        localStorage.setItem("wrongs", JSON.stringify(wrongs));
+        document.getElementById('output').innerText = "请求失败，请检查配置";
       }
     }
   </script>
+
 </body>
 </html>

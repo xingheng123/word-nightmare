@@ -1,36 +1,31 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>傻龙错题库</title>
+  <meta charset="UTF-8" />
+  <title>错题库</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center justify-center">
+<body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
 
   <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-4 text-center">傻龙错题库</h1>
-
-    <ul id="wrongList" class="list-disc pl-6 text-lg text-gray-700"></ul>
-
-    <a href="index.html" class="block text-center mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
-      返回首页
-    </a>
+    <h1 class="text-2xl font-bold mb-4">🗃 傻龙错题库</h1>
+    <ul id="wrongList" class="list-disc pl-6 mb-4 text-lg text-gray-700"></ul>
+    <a href="index.html" class="underline text-blue-600">返回首页</a>
   </div>
 
   <script>
     function loadWrongs() {
-      const wrongs = JSON.parse(localStorage.getItem("wrongs") || "[]");
-      const list = document.getElementById("wrongList");
-
-      if (wrongs.length === 0) {
-        list.innerHTML = "<li class='text-gray-500'>暂无错题</li>";
-        return;
+      const arr = JSON.parse(localStorage.getItem('wrongs') || '[]');
+      const ul = document.getElementById('wrongList');
+      if (!arr.length) {
+        ul.innerHTML = "<li class='text-gray-500'>暂无错题</li>";
+      } else {
+        ul.innerHTML = arr.map(w => `<li>${w}</li>`).join('');
       }
-
-      list.innerHTML = wrongs.map(w => `<li>${w}</li>`).join("");
     }
 
-    loadWrongs();
+    window.addEventListener('load', loadWrongs);
   </script>
+
 </body>
 </html>

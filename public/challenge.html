@@ -1,78 +1,85 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>单词噩梦 - 闯关模式</title>
+  <meta charset="UTF-8" />
+  <title>单词噩梦 ‐ 闯关模式</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center justify-center">
+<body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
 
-  <div class="bg-white shadow-md rounded p-6 w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">5000 单词闯关</h1>
-
-    <p id="question" class="text-lg mb-4"></p>
-
-    <input id="answer" type="text" placeholder="请输入中文意思"
-      class="w-full border rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-green-400">
-
-    <button onclick="checkAnswer()"
-      class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded mb-2">
-      提交答案
+  <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-6">🚀 闯关模式（每关 100 个单词）</h1>
+    <div id="question" class="text-xl font-semibold mb-4">加载中...</div>
+    <input id="answer" type="text" placeholder="请输入英文单词的中文意思" 
+           class="w-full border rounded px-3 py-2 mb-4" />
+    <button onclick="checkAnswer()" class="w-full bg-green-500 text-white px-4 py-2 rounded mb-4">
+      提交
     </button>
-
-    <div id="feedback" class="mt-2 text-lg"></div>
-
-    <a href="index.html" class="block mt-6 text-blue-500">返回首页</a>
+    <div id="feedback" class="text-lg mb-4"></div>
+    <a href="index.html" class="underline text-blue-600">返回首页</a>
   </div>
 
   <script>
-    const words = [
-      { en: "apple", zh: "苹果" },
-      { en: "book", zh: "书" },
-      { en: "computer", zh: "电脑" },
-      { en: "school", zh: "学校" },
-      { en: "friend", zh: "朋友" }
-    ];
-
+    let wordsByLevel = {};
+    let currentLevel = 1;
+    let currentList = [];
     let currentIndex = 0;
 
-    function loadQuestion() {
-      if (currentIndex >= words.length) {
-        document.getElementById("question").innerText = "🎉 恭喜完成闯关！";
-        document.getElementById("answer").style.display = "none";
-        return;
+    async function loadWords() {
+      try {
+        const resp = await fetch('words.json');
+        wordsByLevel = await resp.json();
+        currentList = wordsByLevel["level1"];
+        currentIndex = 0;
+        loadQuestion();
+      } catch(e) {
+        document.getElementById('question').innerText = '载入词库失败';
       }
-      document.getElementById("question").innerText = `请翻译：${words[currentIndex].en}`;
+    }
+
+    function loadQuestion() {
+      if (currentIndex >= currentList.length) {
+        currentLevel++;
+        const nextKey = "level" + currentLevel;
+        if (wordsByLevel[nextKey]) {
+          currentList = wordsByLevel[nextKey];
+          currentIndex = 0;
+          alert(`第 ${currentLevel-1} 关完成！进入第 ${currentLevel} 关`);
+        } else {
+          document.getElementById('question').innerText = "🎉 全部关卡完成！";
+          document.getElementById('answer').style.display = "none";
+          return;
+        }
+      }
+      document.getElementById('question').innerText = `第 ${currentLevel} 关 ‐ 请翻译：${currentList[currentIndex]}`;
+      document.getElementById('answer').value = '';
+      document.getElementById('feedback').innerText = '';
     }
 
     function checkAnswer() {
-      const input = document.getElementById("answer").value.trim();
-      const correct = words[currentIndex].zh;
-
-      if (input === correct) {
-        document.getElementById("feedback").innerHTML = "✅ 正确！";
+      const user = document.getElementById('answer').value.trim();
+      const correct = currentList[currentIndex];
+      if (user.toLowerCase() === correct.toLowerCase()) {
+        document.getElementById('feedback').innerText = "✅ 正确！";
       } else {
-        document.getElementById("feedback").innerHTML = `❌ 错误，正确答案是：${correct}`;
-        saveWrongWord(words[currentIndex].en);
+        document.getElementById('feedback').innerText = `❌ 错误，答案是：${correct}`;
+        saveWrong(correct);
       }
-
       currentIndex++;
-      document.getElementById("answer").value = "";
-      setTimeout(() => {
-        document.getElementById("feedback").innerHTML = "";
-        loadQuestion();
-      }, 1000);
+      setTimeout(loadQuestion, 800);
     }
 
-    function saveWrongWord(word) {
-      let wrongs = JSON.parse(localStorage.getItem("wrongs") || "[]");
-      if (!wrongs.includes(word)) {
-        wrongs.push(word);
-        localStorage.setItem("wrongs", JSON.stringify(wrongs));
+    function saveWrong(word) {
+      const key = 'wrongs';
+      let arr = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!arr.includes(word)) {
+        arr.push(word);
+        localStorage.setItem(key, JSON.stringify(arr));
       }
     }
 
-    loadQuestion();
+    window.addEventListener('load', loadWords);
   </script>
+
 </body>
 </html>
