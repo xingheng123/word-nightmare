@@ -1,31 +1,61 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>错题库</title>
+  <meta charset="utf-8" />
+  <title>傻龙错题库</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
-
-  <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-4">🗃 傻龙错题库</h1>
-    <ul id="wrongList" class="list-disc pl-6 mb-4 text-lg text-gray-700"></ul>
-    <a href="index.html" class="underline text-blue-600">返回首页</a>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-md bg-white rounded shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">傻龙错题库</h1>
+    <div id="list"></div>
+    <div class="mt-4 flex gap-2">
+      <button id="btnClear" class="flex-1 bg-red-500 text-white py-2 rounded">清空</button>
+      <a href="index.html" class="flex-1 text-center bg-gray-200 py-2 rounded">返回首页</a>
+    </div>
   </div>
 
-  <script>
-    function loadWrongs() {
-      const arr = JSON.parse(localStorage.getItem('wrongs') || '[]');
-      const ul = document.getElementById('wrongList');
-      if (!arr.length) {
-        ul.innerHTML = "<li class='text-gray-500'>暂无错题</li>";
-      } else {
-        ul.innerHTML = arr.map(w => `<li>${w}</li>`).join('');
-      }
-    }
+<script>
+  const key = 'wrongs';
+  const listDiv = document.getElementById('list');
+  function render(){
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!arr.length) { listDiv.innerHTML = '<div class="text-gray-500">暂无错题</div>'; return; }
+    listDiv.innerHTML = arr.map((it, idx)=>`
+      <div class="p-2 border rounded mb-2 flex justify-between items-center">
+        <div>
+          <div class="font-semibold">${idx+1}. ${it.en || ''}</div>
+          <div class="text-sm text-gray-600">中文：${it.zh || '—'}</div>
+          <div class="text-xs text-gray-400">${it.when ? new Date(it.when).toLocaleString() : ''}</div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <button class="practiceBtn px-2 py-1 bg-blue-600 text-white rounded" data-en="${it.en}">练习</button>
+          <button class="deleteBtn px-2 py-1 bg-gray-200 rounded" data-en="${it.en}">删除</button>
+        </div>
+      </div>
+    `).join('');
+    // attach events
+    document.querySelectorAll('.deleteBtn').forEach(b=>{
+      b.onclick = ()=> {
+        const en = b.dataset.en;
+        const arr = JSON.parse(localStorage.getItem(key) || '[]').filter(x=>x.en !== en);
+        localStorage.setItem(key, JSON.stringify(arr)); render();
+      };
+    });
+    document.querySelectorAll('.practiceBtn').forEach(b=>{
+      b.onclick = ()=> {
+        const en = b.dataset.en;
+        // go to challenge and practice this word via query param
+        window.location.href = `challenge.html?practice=${encodeURIComponent(en)}`;
+      };
+    });
+  }
 
-    window.addEventListener('load', loadWrongs);
-  </script>
+  document.getElementById('btnClear').onclick = ()=> {
+    if (confirm('确定清空全部错题？')) { localStorage.removeItem(key); render(); }
+  };
 
+  render();
+</script>
 </body>
 </html>
