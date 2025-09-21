@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>单词噩梦 - 自由练习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+
+  <h1 class="text-3xl font-bold text-purple-600 mb-6">🎯 自由练习</h1>
+
+  <div id="card" class="bg-white shadow rounded p-6 w-full max-w-lg text-center">
+    <p id="question" class="text-xl mb-4">点击开始练习！</p>
+    <input id="answerInput" type="text" placeholder="输入答案"
+           class="border px-3 py-2 rounded w-2/3 mb-3" />
+    <div class="space-x-2">
+      <button onclick="checkAnswer()" class="px-4 py-2 bg-blue-500 text-white rounded">提交</button>
+      <button onclick="nextWord()" class="px-4 py-2 bg-gray-500 text-white rounded">下一题</button>
+      <a href="index.html" class="px-4 py-2 bg-green-500 text-white rounded">返回首页</a>
+    </div>
+    <p id="feedback" class="mt-4 text-gray-700"></p>
+  </div>
+
+  <script>
+  let words = [];
+  let currentWord = null;
+  let mode = "en-zh"; // 默认英译中
+
+  async function loadWords() {
+    try {
+      let res = await fetch("words.json");
+      words = await res.json();
+      words = words.flatMap(group => group.words); // 打平成一个大数组
+      nextWord();
+    } catch (err) {
+      console.error(err);
+      document.getElementById("question").innerText = "加载单词失败";
+    }
+  }
+
+  function nextWord() {
+    if (words.length === 0) return;
+    currentWord = words[Math.floor(Math.random() * words.length)];
+    // 随机决定练习方向
+    mode = Math.random() > 0.5 ? "en-zh" : "zh-en";
+
+    if (mode === "en-zh") {
+      document.getElementById("question").innerText = `请翻译成中文: ${currentWord.en}`;
+    } else {
+      document.getElementById("question").innerText = `请翻译成英文: ${currentWord.zh}`;
+    }
+
+    document.getElementById("answerInput").value = "";
+    document.getElementById("feedback").innerText = "";
+  }
+
+  function checkAnswer() {
+    let userAns = document.getElementById("answerInput").value.trim();
+    let correctAns = mode === "en-zh" ? currentWord.zh : currentWord.en;
+
+    if (userAns === correctAns) {
+      document.getElementById("feedback").innerHTML =
+        `<span class="text-green-600">✅ 正确！</span>`;
+    } else {
+      document.getElementById("feedback").innerHTML =
+        `<span class="text-red-600">❌ 错误，正确答案是: ${correctAns}</span>`;
+      saveWrong(currentWord, mode);
+    }
+  }
+
+  function saveWrong(word, mode) {
+    let wrongList = JSON.parse(localStorage.getItem("wrongWords") || "[]");
+    wrongList.push({ ...word, mode });
+    localStorage.setItem("wrongWords", JSON.stringify(wrongList));
+  }
+
+  loadWords();
+  </script>
+</body>
+</html>
