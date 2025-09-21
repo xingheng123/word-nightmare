@@ -1,33 +1,65 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>单词噩梦 - 错题本</title>
+  <title>单词噩梦 - 错题本（傻龙）</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
-  <header class="bg-red-500 text-white p-4 text-center text-2xl font-bold">
-    傻龙错题本
-  </header>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
 
-  <main class="p-6 max-w-2xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold text-center">我的错题</h1>
-    <ul id="wrongList" class="space-y-2"></ul>
-  </main>
+  <h1 class="text-3xl font-bold text-red-600 mb-6">🐉 傻龙错题本</h1>
+
+  <div id="list" class="w-full max-w-3xl bg-white p-6 rounded shadow">
+    <p class="text-gray-500">正在加载错题...</p>
+  </div>
+
+  <div class="mt-6 space-x-2">
+    <button onclick="clearWrong()" class="px-4 py-2 bg-red-500 text-white rounded">清空错题本</button>
+    <a href="index.html" class="px-4 py-2 bg-green-500 text-white rounded">返回首页</a>
+  </div>
 
   <script>
-    const wrong = JSON.parse(localStorage.getItem("wrongWords") || "[]");
-    const list = document.getElementById("wrongList");
-    if (wrong.length === 0) {
-      list.innerHTML = "<p class='text-center text-gray-500'>暂无错题</p>";
-    } else {
-      wrong.forEach((w, i) => {
-        const li = document.createElement("li");
-        li.className = "bg-white shadow p-3 rounded";
-        li.innerText = `${i+1}. 英文: ${w.en}, 中文: ${w.zh}, 你的答案: ${w.userAns}`;
-        list.appendChild(li);
-      });
+  function loadWrong() {
+    let wrongList = JSON.parse(localStorage.getItem("wrongWords") || "[]");
+    let listDiv = document.getElementById("list");
+
+    if (wrongList.length === 0) {
+      listDiv.innerHTML = "<p class='text-gray-500'>🎉 恭喜，没有错题！</p>";
+      return;
     }
+
+    let html = `<table class="w-full text-left border">
+                  <thead class="bg-gray-200">
+                    <tr>
+                      <th class="p-2 border">#</th>
+                      <th class="p-2 border">英文</th>
+                      <th class="p-2 border">中文</th>
+                      <th class="p-2 border">练习方向</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+
+    wrongList.forEach((item, idx) => {
+      html += `<tr>
+                <td class="p-2 border">${idx + 1}</td>
+                <td class="p-2 border">${item.en}</td>
+                <td class="p-2 border">${item.zh}</td>
+                <td class="p-2 border">${item.mode === "en-zh" ? "英译中" : "中译英"}</td>
+              </tr>`;
+    });
+
+    html += "</tbody></table>";
+    listDiv.innerHTML = html;
+  }
+
+  function clearWrong() {
+    if (confirm("确定要清空错题本吗？")) {
+      localStorage.removeItem("wrongWords");
+      loadWrong();
+    }
+  }
+
+  loadWrong();
   </script>
 </body>
 </html>
