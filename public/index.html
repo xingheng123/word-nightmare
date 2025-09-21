@@ -1,56 +1,61 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <title>单词噩梦 - 首页</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
-  <header class="bg-blue-500 text-white p-4 text-center text-2xl font-bold">
-    单词噩梦 Word Nightmare
-  </header>
+<body class="bg-gradient-to-r from-purple-200 via-pink-100 to-blue-200 min-h-screen flex flex-col items-center p-8">
 
-  <main class="p-6 max-w-2xl mx-auto space-y-6">
-    <h1 class="text-3xl font-bold text-center">欢迎来到单词噩梦</h1>
-    <p class="text-center text-gray-600">选择学习模式，或者直接查单词。</p>
+  <!-- 标题 -->
+  <h1 class="text-4xl font-extrabold text-purple-700 mb-8">📚 单词噩梦</h1>
 
-    <!-- 🔍 搜索框 -->
-    <section class="bg-white shadow rounded p-4">
-      <h2 class="text-xl font-semibold mb-2">随手查单词</h2>
-      <div class="flex space-x-2">
-        <input id="searchInput" type="text" placeholder="输入英文或中文"
-          class="flex-1 border rounded p-2">
-        <button onclick="searchWord()"
-          class="bg-blue-500 text-white px-4 py-2 rounded">搜索</button>
-      </div>
-      <p id="searchResult" class="mt-3 text-gray-700"></p>
-    </section>
+  <!-- 搜索区 -->
+  <div class="bg-white shadow-lg rounded p-6 w-full max-w-2xl mb-10">
+    <h2 class="text-2xl font-bold text-gray-700 mb-4">🔍 搜索单词</h2>
+    <div class="flex space-x-2">
+      <input id="searchInput" type="text" placeholder="输入要查询的单词..."
+             class="flex-grow border px-3 py-2 rounded" />
+      <button onclick="searchWord()" class="px-4 py-2 bg-blue-500 text-white rounded">搜索</button>
+    </div>
+    <p id="searchResult" class="mt-4 text-gray-700"></p>
+  </div>
 
-    <!-- 🎮 模式选择 -->
-    <section class="bg-white shadow rounded p-4">
-      <h2 class="text-xl font-semibold mb-2">模式选择</h2>
-      <div class="flex flex-col space-y-3">
-        <a href="challenge.html"
-           class="bg-green-500 text-white p-3 rounded text-center hover:bg-green-600">闯关模式</a>
-        <a href="wrong.html"
-           class="bg-red-500 text-white p-3 rounded text-center hover:bg-red-600">傻龙错题本</a>
-      </div>
-    </section>
-  </main>
+  <!-- 功能区 -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+    <a href="challenge.html" class="bg-purple-500 text-white p-6 rounded-lg shadow hover:bg-purple-600 transition text-center text-xl font-semibold">
+      🚀 闯关模式
+    </a>
+    <a href="practice.html" class="bg-green-500 text-white p-6 rounded-lg shadow hover:bg-green-600 transition text-center text-xl font-semibold">
+      🎯 自由练习
+    </a>
+    <a href="wrong.html" class="bg-red-500 text-white p-6 rounded-lg shadow hover:bg-red-600 transition text-center text-xl font-semibold">
+      🐉 傻龙错题本
+    </a>
+  </div>
 
   <script>
-    async function searchWord() {
-      const q = document.getElementById("searchInput").value.trim();
-      if (!q) return alert("请输入要查询的单词或词语！");
-      try {
-        const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        document.getElementById("searchResult").innerText = 
-          data?.trans_result?.[0]?.dst || "未找到结果";
-      } catch (e) {
-        document.getElementById("searchResult").innerText = "查询失败，请稍后再试。";
+  async function searchWord() {
+    let word = document.getElementById("searchInput").value.trim();
+    if (!word) return;
+
+    document.getElementById("searchResult").innerText = "查询中...";
+
+    try {
+      let res = await fetch(`/api/baiduTranslate?query=${encodeURIComponent(word)}`);
+      let data = await res.json();
+
+      if (data && data.trans_result && data.trans_result[0]) {
+        document.getElementById("searchResult").innerText =
+          `👉 翻译结果: ${data.trans_result[0].dst}`;
+      } else {
+        document.getElementById("searchResult").innerText = "未查询到结果";
       }
+    } catch (err) {
+      console.error(err);
+      document.getElementById("searchResult").innerText = "❌ 查询失败，请检查 API 设置";
     }
+  }
   </script>
 </body>
 </html>
