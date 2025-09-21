@@ -1,127 +1,105 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>单词噩梦 闯关模式</title>
+  <meta charset="UTF-8">
+  <title>单词噩梦 - 闯关模式</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
-  <header class="p-4 bg-green-500 text-white text-center text-2xl font-bold">
-    闯关模式 (每关 100 个单词)
-  </header>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start p-6">
 
-  <main class="max-w-lg mx-auto p-6 space-y-4">
-    <div class="flex space-x-2">
-      <label><input type="radio" name="mode" value="en-zh" checked /> 英译中</label>
-      <label><input type="radio" name="mode" value="zh-en" /> 中译英</label>
-      <label><input type="radio" name="mode" value="random" /> 随机</label>
-    </div>
+  <h1 class="text-3xl font-bold text-blue-600 mb-6">单词噩梦 - 闯关模式</h1>
 
-    <div id="questionArea" class="bg-white p-6 rounded shadow text-center">
-      <p id="question" class="text-xl font-semibold mb-4">加载题目...</p>
-      <input id="answer" type="text" placeholder="请输入答案"
-             class="w-full border rounded p-2 mb-4" />
-      <button onclick="checkAnswer()" class="bg-blue-500 text-white px-4 py-2 rounded">提交</button>
-      <button onclick="nextQuestion()" class="ml-2 bg-gray-400 text-white px-4 py-2 rounded">跳过</button>
-      <p id="feedback" class="mt-4 text-lg"></p>
-      <p id="progress" class="mt-2 text-sm text-gray-600"></p>
-    </div>
-  </main>
+  <!-- 模式切换 -->
+  <div class="mb-4 space-x-2">
+    <button onclick="setMode('en2zh')" class="px-4 py-2 bg-blue-500 text-white rounded">英译中</button>
+    <button onclick="setMode('zh2en')" class="px-4 py-2 bg-green-500 text-white rounded">中译英</button>
+  </div>
+
+  <!-- 出题框 -->
+  <div id="wordBox" class="bg-white shadow rounded p-6 w-full max-w-lg text-center">
+    <p>正在加载题目...</p>
+  </div>
 
   <script>
-    let wordsByLevel = {};
-    let currentLevel = 1;
-    let currentList = [];
-    let currentIndex = 0;
-    let mode = 'en-zh';
-    let expectedAnswer = '';
+  let words = [];
+  let currentIndex = 0;
+  let currentLevel = 1;
+  let mode = "en2zh"; // 默认英译中
+  let wrongList = JSON.parse(localStorage.getItem("wrongList")) || [];
 
-    document.querySelectorAll("input[name='mode']").forEach(r => {
-      r.addEventListener('change', () => {
-        mode = document.querySelector("input[name='mode']:checked").value;
+  // 加载单词
+  async function loadWords() {
+    try {
+      const res = await fetch("words.json");
+      const data = await res.json();
+      const levelData = data.levels.find(l => l.level === currentLevel);
+      words = levelData.words;
+      showWord();
+    } catch (err) {
+      document.getElementById("wordBox").innerHTML = "<p class='text-red-500'>题目加载失败，请检查 words.json</p>";
+      console.error("加载单词错误:", err);
+    }
+  }
+
+  // 显示题目
+  function showWord() {
+    if (currentIndex >= words.length) {
+      document.getElementById("wordBox").innerHTML = `<p>🎉 第 ${currentLevel} 关完成！</p>`;
+      return;
+    }
+
+    let word = words[currentIndex];
+    let questionText = (mode === "en2zh") ? word.en : word.zh;
+    document.getElementById("wordBox").innerHTML = `
+      <p class="mb-2">第 ${currentLevel} 关 ${currentIndex + 1}/${words.length}</p>
+      <p class="text-xl font-semibold mb-4">${questionText}</p>
+      <input id="answer" type="text" placeholder="请输入答案" class="border px-3 py-2 rounded w-2/3" />
+      <div class="mt-4 space-x-2">
+        <button onclick="checkAnswer()" class="px-4 py-2 bg-blue-500 text-white rounded">提交</button>
+        <button onclick="skip()" class="px-4 py-2 bg-gray-400 text-white rounded">跳过</button>
+      </div>
+      <p id="feedback" class="mt-3"></p>
+    `;
+  }
+
+  // 检查答案
+  function checkAnswer() {
+    let word = words[currentIndex];
+    let userAns = document.getElementById("answer").value.trim();
+    let correct = (mode === "en2zh") ? word.zh : word.en;
+
+    if (userAns === correct) {
+      document.getElementById("feedback").innerHTML = `<span class="text-green-600 font-bold">✔ 正确</span>`;
+    } else {
+      document.getElementById("feedback").innerHTML = `<span class="text-red-600 font-bold">✘ 错误，正确答案：${correct}</span>`;
+
+      // 保存错题
+      wrongList.push({
+        en: word.en,
+        zh: word.zh,
+        yourAnswer: userAns
       });
-    });
-
-    async function loadWords() {
-      try {
-        const resp = await fetch('words.json');
-        wordsByLevel = await resp.json();
-        currentList = wordsByLevel["level" + currentLevel] || [];
-        showQuestion();
-      } catch (err) {
-        console.error("载入词库失败:", err);
-        document.getElementById('question').innerText = '加载词库失败';
-      }
+      localStorage.setItem("wrongList", JSON.stringify(wrongList));
     }
 
-    async function showQuestion() {
-      if (currentIndex >= currentList.length) {
-        document.getElementById('question').innerText = `第 ${currentLevel} 关 完成！`;
-        return;
-      }
-      const word = currentList[currentIndex];
-      try {
-        if (mode === 'en-zh') {
-          document.getElementById('question').innerText = `翻译成中文： ${word}`;
-          const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
-          const data = await res.json();
-          expectedAnswer = data.trans_result?.[0]?.dst || '';
-        } else if (mode === 'zh-en') {
-          const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
-          const data = await res.json();
-          const zh = data.trans_result?.[0]?.dst || '';
-          document.getElementById('question').innerText = `翻译成英文： ${zh}`;
-          expectedAnswer = word;
-        } else {  // random
-          if (Math.random() < 0.5) {
-            document.getElementById('question').innerText = `翻译成中文： ${word}`;
-            const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
-            const data = await res.json();
-            expectedAnswer = data.trans_result?.[0]?.dst || '';
-          } else {
-            const res = await fetch(`/api/baiduTranslate?q=${encodeURIComponent(word)}`);
-            const data = await res.json();
-            const zh = data.trans_result?.[0]?.dst || '';
-            document.getElementById('question').innerText = `翻译成英文： ${zh}`;
-            expectedAnswer = word;
-          }
-        }
-      } catch (err) {
-        console.error("题目加载失败:", err);
-        document.getElementById('question').innerText = '加载失败，请稍后重试';
-        expectedAnswer = '';
-      }
-      document.getElementById('answer').value = '';
-      document.getElementById('feedback').innerText = '';
-      document.getElementById('progress').innerText = `第 ${currentIndex+1} / ${currentList.length} 题`;
-    }
+    currentIndex++;
+    setTimeout(showWord, 1000);
+  }
 
-    function checkAnswer() {
-      const user = document.getElementById('answer').value.trim();
-      if (!user) {
-        document.getElementById('feedback').innerText = '请输入答案';
-        return;
-      }
-      if (user.toLowerCase() === (expectedAnswer || '').toLowerCase()) {
-        document.getElementById('feedback').innerText = '✅ 正确';
-      } else {
-        document.getElementById('feedback').innerText = `❌ 错误，正确答案：${expectedAnswer}`;
-        // 保错题
-        const wrong = JSON.parse(localStorage.getItem('wrongWords') || '[]');
-        wrong.push({ en: mode==='en-zh'? currentList[currentIndex] : expectedAnswer, zh: mode==='en-zh'? expectedAnswer : currentList[currentIndex] });
-        localStorage.setItem('wrongWords', JSON.stringify(wrong));
-      }
-      currentIndex++;
-      setTimeout(showQuestion, 1000);
-    }
+  // 跳过
+  function skip() {
+    currentIndex++;
+    showWord();
+  }
 
-    function nextQuestion() {
-      currentIndex++;
-      showQuestion();
-    }
+  // 切换模式
+  function setMode(m) {
+    mode = m;
+    currentIndex = 0;
+    showWord();
+  }
 
-    window.addEventListener('load', loadWords);
+  window.onload = loadWords;
   </script>
 </body>
 </html>
