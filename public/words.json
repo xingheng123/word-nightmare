@@ -1,52 +1,37 @@
-[
-  {
-    "id": 1,
-    "word": "abandon",
-    "translation": "放弃"
-  },
-  {
-    "id": 2,
-    "word": "ability",
-    "translation": "能力"
-  },
-  {
-    "id": 3,
-    "word": "abolish",
-    "translation": "废除"
-  },
-  {
-    "id": 4,
-    "word": "absorb",
-    "translation": "吸收"
-  },
-  {
-    "id": 5,
-    "word": "abstract",
-    "translation": "抽象的"
-  },
-  {
-    "id": 6,
-    "word": "academic",
-    "translation": "学术的"
-  },
-  {
-    "id": 7,
-    "word": "accelerate",
-    "translation": "加速"
-  },
-  {
-    "id": 8,
-    "word": "accept",
-    "translation": "接受"
-  },
-  {
-    "id": 9,
-    "word": "access",
-    "translation": "进入；使用权"
-  },
-  {
-    "id": 10,
-    "word": "accident",
-    "translation": "事故"
-  }
-]
+{
+  "levels": [
+    {
+      "level": 1,
+      "words": [
+        { "en": "abandon", "zh": "放弃" },
+        { "en": "ability", "zh": "能力" },
+        { "en": "able", "zh": "有能力的" },
+        { "en": "about", "zh": "关于" },
+        { "en": "above", "zh": "在…上方" },
+        { "en": "accept", "zh": "接受" },
+        { "en": "accident", "zh": "事故" },
+        { "en": "according", "zh": "根据" },
+        { "en": "account", "zh": "账户；解释" },
+        { "en": "achieve", "zh": "实现" }
+        
+      ]
+    },
+    {
+      "level": 2,
+      "words": [
+        { "en": "activity", "zh": "活动" },
+        { "en": "actor", "zh": "演员" },
+        { "en": "actual", "zh": "实际的" },
+        { "en": "adapt", "zh": "适应" },
+        { "en": "add", "zh": "增加" },
+        { "en": "address", "zh": "地址；演讲" },
+        { "en": "admire", "zh": "钦佩" },
+        { "en": "admit", "zh": "承认" },
+        { "en": "adult", "zh": "成年人" },
+        { "en": "advance", "zh": "前进；进步" }
+        
+      ]
+    }
+    
+  ]
+}
